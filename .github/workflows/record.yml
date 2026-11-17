@@ -1,0 +1,61 @@
+name: record
+
+on:
+  schedule:
+    # alle 30 min, krumme Minuten (zur vollen Stunde staut sich der GitHub-Scheduler)
+    - cron: "11,41 * * * *"
+  workflow_dispatch:
+    inputs:
+      force_static:
+        description: "Static-Ausschnitt neu bauen"
+        type: boolean
+        default: false
+
+concurrency:
+  group: recorder
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # nur Code, Static-Ausschnitte und Index auschecken; die RT-Snapshots wachsen und werden nicht gebraucht
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            recorder
+            data/static
+            data/index
+            requirements.txt
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Static-Ausschnitt aktualisieren (nur bei neuer gtfs.de-Version)
+        run: python -m recorder.static_subset ${{ inputs.force_static && '--force' || '' }}
+
+      - name: Snapshot
+        run: python -m recorder.snapshot
+
+      - name: Commit + Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --sparse data
+          git diff --cached --quiet && exit 0
+          git commit -q -m "snapshot $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          for i in 1 2 3 4 5; do
+            git pull -q --rebase && git push -q && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
