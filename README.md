@@ -12,9 +12,10 @@ GitHub Actions (`.github/workflows/record.yml`) läuft alle 30 min:
    Ausschnitt bauen (Haltestellen in der Bounding Box, alle Fahrten, die dort halten, samt kompletter
    `stop_times`, `trips`, `routes`, `calendar*`, `agency`) → `data/static/<version>/`.
 2. `recorder.snapshot`: holt den RT-Feed (bundesweit, ~30 MB), behält Trip-Updates und Alerts mit Bezug
-   zum Ausschnitt und speichert sie **unverändert als Protobuf** → `data/rt/YYYY-MM-DD/HHMMSSZ.pb.gz`.
+   zum Ausschnitt und speichert sie **unverändert als Protobuf** (xz) als Asset im Release `rt-YYYY-MM-DD`
+   (Dateiname `HHMMSSZ.pb.xz`, UTC). Nicht in Git, damit das Repo klein bleibt (~0,4–0,6 MB pro Snapshot).
    Gefiltert wird gegen die zwei jüngsten Static-Versionen (Versionswechsel).
-3. Commit + Push.
+3. Upload ins Tages-Release, danach Commit + Push von Index und ggf. Static-Ausschnitt.
 
 Pro Snapshot eine Zeile in `data/index/YYYY-MM-DD.csv`: Rohgröße, Entitäten gesamt/behalten, Feed-Alter usw.
 Das ist auch die Datengrundlage für die Volumen-Hochrechnung auf den Gesamtfeed (ADR 0018).
@@ -27,11 +28,16 @@ reicht ein Snapshot, solange beendete Fahrten länger als das Intervall im Feed 
 
 ## Replay
 
+```bash
+gh release download rt-2026-11-18 -D data/rt/2026-11-18          # ein Tag
+for t in $(gh release list -L 200 --json tagName -q '.[].tagName'); do gh release download $t -D data/rt/${t#rt-} --skip-existing; done
+```
+
 ```python
-import gzip
+import lzma
 from google.transit import gtfs_realtime_pb2 as pb
 f = pb.FeedMessage()
-f.ParseFromString(gzip.decompress(open("data/rt/2026-11-18/081100Z.pb.gz", "rb").read()))
+f.ParseFromString(lzma.decompress(open("data/rt/2026-11-18/081100Z.pb.xz", "rb").read()))
 ```
 
 Zum Interpretieren der `trip_id`s die Static-Version aus `static_versions` im Index nehmen.

@@ -1,6 +1,7 @@
 """Holt einen GTFS-RT-Snapshot und speichert den Stuttgart-Ausschnitt verlustfrei als Protobuf.
 
-Ablage: data/rt/YYYY-MM-DD/HHMMSSZ.pb.gz (UTC, Zeitpunkt des Abrufs)
+Ablage: data/rt/YYYY-MM-DD/HHMMSSZ.pb.xz (UTC, Zeitpunkt des Abrufs). Nicht in Git, sondern als
+        Asset im Release rt-YYYY-MM-DD (siehe Workflow), damit das Repo klein bleibt.
 Index:  data/index/YYYY-MM-DD.csv (eine Zeile pro Snapshot, auch für die Volumen-Hochrechnung)
 
 Gefiltert wird gegen die beiden jüngsten Static-Versionen, damit beim Versionswechsel
@@ -12,6 +13,8 @@ from __future__ import annotations
 import csv
 import gzip
 import json
+import lzma
+import os
 import sys
 import time
 import urllib.request
@@ -24,7 +27,7 @@ from recorder.config import CURRENT, INDEX_DIR, RT_DIR, RT_URL, STATIC_DIR, USER
 INDEX_FIELDS = [
     "fetched_at_utc", "file", "header_timestamp", "feed_age_s", "last_modified", "etag",
     "bytes_raw", "entities_total", "trip_updates_total", "alerts_total",
-    "trip_updates_kept", "alerts_kept", "stop_time_updates_kept", "bytes_kept_gz",
+    "trip_updates_kept", "alerts_kept", "stop_time_updates_kept", "bytes_kept_xz",
     "static_versions", "fetch_seconds", "attempts",
 ]
 
@@ -108,10 +111,10 @@ def main() -> int:
                 out.entity.append(e)
 
     day = fetched.strftime("%Y-%m-%d")
-    name = fetched.strftime("%H%M%SZ") + ".pb.gz"
+    name = fetched.strftime("%H%M%SZ") + ".pb.xz"
     day_dir = RT_DIR / day
     day_dir.mkdir(parents=True, exist_ok=True)
-    payload = gzip.compress(out.SerializeToString(), compresslevel=9, mtime=0)
+    payload = lzma.compress(out.SerializeToString(), preset=9)
     (day_dir / name).write_bytes(payload)
 
     INDEX_DIR.mkdir(parents=True, exist_ok=True)
@@ -119,7 +122,7 @@ def main() -> int:
     new = not idx_path.exists()
     row = {
         "fetched_at_utc": fetched.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "file": f"rt/{day}/{name}",
+        "file": f"rt-{day}/{name}",
         "header_timestamp": feed.header.timestamp,
         "feed_age_s": int(fetched.timestamp() - feed.header.timestamp) if feed.header.timestamp else "",
         "last_modified": headers.get("Last-Modified", ""),
@@ -131,7 +134,7 @@ def main() -> int:
         "trip_updates_kept": tu_kept,
         "alerts_kept": al_kept,
         "stop_time_updates_kept": stu_kept,
-        "bytes_kept_gz": len(payload),
+        "bytes_kept_xz": len(payload),
         "static_versions": "+".join(versions),
         "fetch_seconds": round(fetch_s, 1),
         "attempts": attempts,
@@ -142,6 +145,9 @@ def main() -> int:
             w.writeheader()
         w.writerow(row)
     print(json.dumps(row, indent=2))
+    if gh_out := os.environ.get("GITHUB_OUTPUT"):
+        with open(gh_out, "a") as f:
+            f.write(f"day={day}\nfile={day_dir / name}\n")
 
     if tu_total and tu_kept / tu_total < 0.005:
         # Plausibilitätswarnung: vermutlich passen trip_ids nicht mehr zum Static-Ausschnitt

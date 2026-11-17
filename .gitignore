@@ -3,3 +3,4 @@ __pycache__/
 .venv/
 data/static/.*.tmp/
 .DS_Store
+data/rt/

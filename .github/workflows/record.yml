@@ -45,13 +45,31 @@ jobs:
         run: python -m recorder.static_subset ${{ inputs.force_static && '--force' || '' }}
 
       - name: Snapshot
+        id: snap
         run: python -m recorder.snapshot
+
+      # Erst das Asset hochladen, dann den Index committen: der Index zeigt nie auf eine fehlende Datei
+      - name: Snapshot ins Tages-Release laden
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DAY: ${{ steps.snap.outputs.day }}
+          FILE: ${{ steps.snap.outputs.file }}
+        run: |
+          tag="rt-$DAY"
+          gh release view "$tag" >/dev/null 2>&1 || \
+            gh release create "$tag" --title "RT $DAY" --latest=false \
+              --notes "GTFS-RT-Snapshots Stuttgart-Ausschnitt vom $DAY (UTC). Quelle gtfs.de, CC BY-SA 4.0." || true
+          for i in 1 2 3 4 5; do
+            gh release upload "$tag" "$FILE" && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
 
       - name: Commit + Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add --sparse data
+          git add --sparse data/static data/index
           git diff --cached --quiet && exit 0
           git commit -q -m "snapshot $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           for i in 1 2 3 4 5; do
