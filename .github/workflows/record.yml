@@ -2,7 +2,8 @@ name: record
 
 on:
   schedule:
-    # alle 10 min, krumme Minuten (zur vollen Stunde staut sich der GitHub-Scheduler)
+    # alle 10 min, krumme Minuten (zur vollen Stunde staut sich der GitHub-Scheduler).
+    # Der Scheduler ist best effort: Lücken zeigt data/index/*.csv.
     - cron: "3,13,23,33,43,53 * * * *"
   workflow_dispatch:
     inputs:
