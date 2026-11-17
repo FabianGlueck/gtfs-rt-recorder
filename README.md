@@ -6,7 +6,7 @@ Hintergrund: Leitstand ADR 0020, 0023, Risiko R15.
 
 ## Was passiert
 
-GitHub Actions (`.github/workflows/record.yml`) läuft alle 30 min:
+GitHub Actions (`.github/workflows/record.yml`) läuft alle 10 min (der Scheduler verspätet sich oft um einige Minuten):
 
 1. `recorder.static_subset`: prüft per HEAD, ob gtfs.de einen neuen Static-Feed hat. Falls ja: Download (~280 MB),
    Ausschnitt bauen (Haltestellen in der Bounding Box, alle Fahrten, die dort halten, samt kompletter
@@ -20,11 +20,12 @@ GitHub Actions (`.github/workflows/record.yml`) läuft alle 30 min:
 Pro Snapshot eine Zeile in `data/index/YYYY-MM-DD.csv`: Rohgröße, Entitäten gesamt/behalten, Feed-Alter usw.
 Das ist auch die Datengrundlage für die Volumen-Hochrechnung auf den Gesamtfeed (ADR 0018).
 
-## Warum 30 Minuten
+## Warum 10 Minuten
 
-Privates Repo auf GitHub Free: ~2000 Actions-Minuten pro Monat, jeder Lauf wird auf eine Minute aufgerundet.
-48 Läufe/Tag ≈ 1500 min/Monat. Der Feed enthält zu jeder laufenden Fahrt auch die vergangenen Halte, deshalb
-reicht ein Snapshot, solange beendete Fahrten länger als das Intervall im Feed bleiben.
+Beendete Fahrten bleiben noch ≥ 60 min nach dem letzten Halt im Feed (Messung 17.11.2026). Rund 4 % der
+vergangenen Halte verschwinden aber schon nach wenigen Minuten aus laufenden Fahrten; je kürzer der Takt, desto
+öfter ist für diese Halte die Ist-Zeit statt nur der letzten Prognose erfasst. Das Repo ist öffentlich, damit die
+Actions-Minuten nicht begrenzt sind (privat wären auf GitHub Free nur ~30 min Takt möglich).
 
 ## Replay
 

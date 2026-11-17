@@ -2,8 +2,8 @@ name: record
 
 on:
   schedule:
-    # alle 30 min, krumme Minuten (zur vollen Stunde staut sich der GitHub-Scheduler)
-    - cron: "11,41 * * * *"
+    # alle 10 min, krumme Minuten (zur vollen Stunde staut sich der GitHub-Scheduler)
+    - cron: "3,13,23,33,43,53 * * * *"
   workflow_dispatch:
     inputs:
       force_static:
