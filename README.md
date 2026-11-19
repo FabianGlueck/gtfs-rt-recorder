@@ -27,6 +27,20 @@ vergangenen Halte verschwinden aber schon nach wenigen Minuten aus laufenden Fah
 öfter ist für diese Halte die Ist-Zeit statt nur der letzten Prognose erfasst. Das Repo ist öffentlich, damit die
 Actions-Minuten nicht begrenzt sind (privat wären auf GitHub Free nur ~30 min Takt möglich).
 
+## Auslöser
+
+Der GitHub-Scheduler ist „best effort“ und hat hier in den ersten zwei Tagen nur etwa alle 3–8 h ausgelöst
+statt alle 10 min. Deshalb gibt es zusätzliche Auslöser per `workflow_dispatch`; die Concurrency-Gruppe verhindert
+überlappende Läufe.
+
+- **Lokal (Notbehelf):** `tools/trigger-local.sh` per launchd alle 10 min, nur solange der Mac wach ist.
+  Installation: `__HOME__` in `tools/de.gtfs-rt-recorder.trigger.plist` durch das Home-Verzeichnis ersetzen, nach
+  `~/Library/LaunchAgents/` kopieren, `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/de.gtfs-rt-recorder.trigger.plist`.
+  Entfernen: `launchctl bootout gui/$(id -u)/de.gtfs-rt-recorder.trigger`. Log: `~/Library/Logs/gtfs-rt-recorder-trigger.log`.
+- **Extern (geplant):** cron-job.org ruft alle 10 min
+  `POST https://api.github.com/repos/FabianGlueck/gtfs-rt-recorder/actions/workflows/record.yml/dispatches`
+  mit Body `{"ref":"main"}` auf, Fine-grained-Token nur für dieses Repo (Actions: Read and write).
+
 ## Replay
 
 ```bash
