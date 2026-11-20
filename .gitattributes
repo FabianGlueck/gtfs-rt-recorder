@@ -1,0 +1,3 @@
+# Zwei Läufe kurz nacheinander hängen beide eine Zeile an denselben Tagesindex an;
+# union-Merge behält beim Rebase beide Zeilen statt abzubrechen.
+data/index/*.csv merge=union

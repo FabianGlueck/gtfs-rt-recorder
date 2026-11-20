@@ -31,11 +31,12 @@ Actions-Minuten nicht begrenzt sind (privat wären auf GitHub Free nur ~30 min T
 
 Der GitHub-Scheduler ist „best effort“ und hat hier in den ersten zwei Tagen nur etwa alle 3–8 h ausgelöst
 statt alle 10 min. Deshalb gibt es zusätzliche Auslöser per `workflow_dispatch`; die Concurrency-Gruppe verhindert
-überlappende Läufe.
+überlappende Läufe, `.gitattributes` (union-Merge) verhindert Konflikte im Tagesindex bei Läufen kurz nacheinander.
 
-- **Lokal (Notbehelf):** `tools/trigger-local.sh` per launchd alle 10 min, nur solange der Mac wach ist.
-  Installation: `__HOME__` in `tools/de.gtfs-rt-recorder.trigger.plist` durch das Home-Verzeichnis ersetzen, nach
-  `~/Library/LaunchAgents/` kopieren, `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/de.gtfs-rt-recorder.trigger.plist`.
+- **Lokal (Notbehelf, abgeschaltet seit 20.11.2026):** `tools/trigger-local.sh` per launchd alle 10 min, nur solange
+  der Mac wach ist. Lief parallel zu cron-job.org und erzeugte doppelte Läufe. Wieder einschalten nur, falls der
+  externe Auslöser ausfällt: `__HOME__` in `tools/de.gtfs-rt-recorder.trigger.plist` durch das Home-Verzeichnis ersetzen,
+  nach `~/Library/LaunchAgents/` kopieren, `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/de.gtfs-rt-recorder.trigger.plist`.
   Entfernen: `launchctl bootout gui/$(id -u)/de.gtfs-rt-recorder.trigger`. Log: `~/Library/Logs/gtfs-rt-recorder-trigger.log`.
 - **Extern (Hauptweg, seit 20.11.2026):** cron-job.org ruft alle 10 min
   `POST https://api.github.com/repos/FabianGlueck/gtfs-rt-recorder/actions/workflows/record.yml/dispatches`
