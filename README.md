@@ -37,9 +37,9 @@ statt alle 10 min. Deshalb gibt es zusätzliche Auslöser per `workflow_dispatch
   Installation: `__HOME__` in `tools/de.gtfs-rt-recorder.trigger.plist` durch das Home-Verzeichnis ersetzen, nach
   `~/Library/LaunchAgents/` kopieren, `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/de.gtfs-rt-recorder.trigger.plist`.
   Entfernen: `launchctl bootout gui/$(id -u)/de.gtfs-rt-recorder.trigger`. Log: `~/Library/Logs/gtfs-rt-recorder-trigger.log`.
-- **Extern (geplant):** cron-job.org ruft alle 10 min
+- **Extern (Hauptweg, seit 20.11.2026):** cron-job.org ruft alle 10 min
   `POST https://api.github.com/repos/FabianGlueck/gtfs-rt-recorder/actions/workflows/record.yml/dispatches`
-  mit Body `{"ref":"main"}` auf, Fine-grained-Token nur für dieses Repo (Actions: Read and write).
+  mit Body `{"ref":"main"}` auf, Fine-grained-Token nur für dieses Repo (Actions: Read and write), gültig bis 18.02.2027.
 
 ## Replay
 
