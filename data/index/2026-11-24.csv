@@ -1,0 +1,2 @@
+fetched_at_utc,file,header_timestamp,feed_age_s,last_modified,etag,bytes_raw,entities_total,trip_updates_total,alerts_total,trip_updates_kept,alerts_kept,stop_time_updates_kept,bytes_kept_xz,static_versions,fetch_seconds,attempts
+2026-11-24T00:01:07Z,rt-2026-11-24/000107Z.pb.xz,1795478444,23,"Tue, 24 Nov 2026 00:00:45 GMT",3ab4e4-660fa66ee515c,3847396,16267,15975,292,1237,95,13739,138328,2026-11-14T092810Z+2026-11-21T094212Z,2.1,1
